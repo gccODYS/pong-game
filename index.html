@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pong Game</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background-color: #000;
+            font-family: Arial, sans-serif;
+        }
+        #game-container {
+            border: 2px solid #fff;
+        }
+        .instructions {
+            color: white;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div>
+        <div class="instructions">
+            <p>Use W/S or Arrow Keys to move your paddle</p>
+            <p>First to 5 points wins!</p>
+        </div>
+        <div id="game-container"></div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/phaser@3.70.0/dist/phaser.min.js"></script>
+    <script>
+        class PongScene extends Phaser.Scene {
+            constructor() {
+                super({ key: 'PongScene' });
+            }
+
+            preload() {
+                // Create simple colored rectangles for paddles and ball
+                this.add.graphics()
+                    .fillStyle(0xffffff)
+                    .fillRect(0, 0, 20, 100)
+                    .generateTexture('paddle', 20, 100);
+
+                this.add.graphics()
+                    .fillStyle(0xffffff)
+                    .fillRect(0, 0, 20, 20)
+                    .generateTexture('ball', 20, 20);
+            }
+
+            create() {
+                // Game dimensions
+                this.gameWidth = 800;
+                this.gameHeight = 600;
+
+                // Paddles
+                this.leftPaddle = this.physics.add.sprite(50, this.gameHeight / 2, 'paddle');
+                this.rightPaddle = this.physics.add.sprite(this.gameWidth - 50, this.gameHeight / 2, 'paddle');
+                
+                // Make paddles immovable
+                this.leftPaddle.setImmovable(true);
+                this.rightPaddle.setImmovable(true);
+
+                // Ball
+                this.ball = this.physics.add.sprite(this.gameWidth / 2, this.gameHeight / 2, 'ball');
+                this.ball.setCollideWorldBounds(true);
+                this.ball.setBounce(1, 1);
+
+                // Start ball movement
+                this.resetBall();
+
+                // Scores
+                this.leftScore = 0;
+                this.rightScore = 0;
+                this.leftScoreText = this.add.text(200, 50, '0', { fontSize: '48px', fill: '#fff' });
+                this.rightScoreText = this.add.text(600, 50, '0', { fontSize: '48px', fill: '#fff' });
+
+                // Input
+                this.cursors = this.input.keyboard.createCursorKeys();
+                this.wasd = this.input.keyboard.addKeys('W,S');
+
+                // Collisions
+                this.physics.add.collider(this.ball, this.leftPaddle, this.hitPaddle, null, this);
+                this.physics.add.collider(this.ball, this.rightPaddle, this.hitPaddle, null, this);
+
+                // World bounds (but not left/right)
+                this.physics.world.setBoundsCollision(false, false, true, true);
+
+                // Game over text (initially hidden)
+                this.gameOverText = this.add.text(this.gameWidth / 2, this.gameHeight / 2, '', 
+                    { fontSize: '32px', fill: '#fff', align: 'center' }).setOrigin(0.5);
+                this.restartText = this.add.text(this.gameWidth / 2, this.gameHeight / 2 + 50, 
+                    'Press SPACE to restart', { fontSize: '20px', fill: '#fff', align: 'center' }).setOrigin(0.5);
+                this.restartText.setVisible(false);
+
+                this.gameActive = true;
+            }
+
+            update() {
+                if (!this.gameActive) {
+                    if (this.input.keyboard.checkDown(this.input.keyboard.addKey('SPACE'))) {
+                        this.restartGame();
+                    }
+                    return;
+                }
+
+                // Player paddle movement (left paddle)
+                if (this.cursors.up.isDown || this.wasd.W.isDown) {
+                    this.leftPaddle.setVelocityY(-300);
+                } else if (this.cursors.down.isDown || this.wasd.S.isDown) {
+                    this.leftPaddle.setVelocityY(300);
+                } else {
+                    this.leftPaddle.setVelocityY(0);
+                }
+
+                // AI paddle movement (right paddle) - simple AI
+                const aiSpeed = 250;
+                if (this.ball.y < this.rightPaddle.y - 10) {
+                    this.rightPaddle.setVelocityY(-aiSpeed);
+                } else if (this.ball.y > this.rightPaddle.y + 10) {
+                    this.rightPaddle.setVelocityY(aiSpeed);
+                } else {
+                    this.rightPaddle.setVelocityY(0);
+                }
+
+                // Keep paddles within bounds
+                this.leftPaddle.y = Phaser.Math.Clamp(this.leftPaddle.y, 50, this.gameHeight - 50);
+                this.rightPaddle.y = Phaser.Math.Clamp(this.rightPaddle.y, 50, this.gameHeight - 50);
+
+                // Check for scoring
+                if (this.ball.x < 0) {
+                    this.rightScore++;
+                    this.rightScoreText.setText(this.rightScore);
+                    this.checkGameOver();
+                    if (this.gameActive) this.resetBall();
+                } else if (this.ball.x > this.gameWidth) {
+                    this.leftScore++;
+                    this.leftScoreText.setText(this.leftScore);
+                    this.checkGameOver();
+                    if (this.gameActive) this.resetBall();
+                }
+            }
+
+            hitPaddle(ball, paddle) {
+                // Add some randomness to ball direction
+                let diff = ball.y - paddle.y;
+                ball.setVelocityY(diff * 5);
+            }
+
+            resetBall() {
+                this.ball.setPosition(this.gameWidth / 2, this.gameHeight / 2);
+                // Random direction
+                const direction = Math.random() > 0.5 ? 1 : -1;
+                this.ball.setVelocity(300 * direction, Phaser.Math.Between(-200, 200));
+            }
+
+            checkGameOver() {
+                if (this.leftScore >= 5 || this.rightScore >= 5) {
+                    this.gameActive = false;
+                    this.ball.setVelocity(0, 0);
+                    this.leftPaddle.setVelocity(0, 0);
+                    this.rightPaddle.setVelocity(0, 0);
+                    
+                    const winner = this.leftScore >= 5 ? 'Player Wins!' : 'AI Wins!';
+                    this.gameOverText.setText(winner);
+                    this.restartText.setVisible(true);
+                }
+            }
+
+            restartGame() {
+                this.leftScore = 0;
+                this.rightScore = 0;
+                this.leftScoreText.setText('0');
+                this.rightScoreText.setText('0');
+                this.gameOverText.setText('');
+                this.restartText.setVisible(false);
+                this.gameActive = true;
+                this.resetBall();
+            }
+        }
+
+        // Game configuration
+        const config = {
+            type: Phaser.AUTO,
+            width: 800,
+            height: 600,
+            parent: 'game-container',
+            backgroundColor: '#000000',
+            physics: {
+                default: 'arcade',
+                arcade: {
+                    debug: false
+                }
+            },
+            scene: PongScene
+        };
+
+        // Start the game
+        const game = new Phaser.Game(config);
+    </script>
+</body>
+</html>
