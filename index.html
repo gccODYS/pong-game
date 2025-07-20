@@ -28,7 +28,7 @@
 <body>
     <div>
         <div class="instructions">
-            <p>Use W/S or Arrow Keys to move your paddle</p>
+            <p>Player 1: W/S keys | Player 2: Arrow Keys</p>
             <p>First to 5 points wins!</p>
         </div>
         <div id="game-container"></div>
@@ -46,12 +46,14 @@
                 this.add.graphics()
                     .fillStyle(0xffffff)
                     .fillRect(0, 0, 20, 100)
-                    .generateTexture('paddle', 20, 100);
+                    .generateTexture('paddle', 20, 100)
+                    .destroy();
 
                 this.add.graphics()
                     .fillStyle(0xffffff)
                     .fillRect(0, 0, 20, 20)
-                    .generateTexture('ball', 20, 20);
+                    .generateTexture('ball', 20, 20)
+                    .destroy();
             }
 
             create() {
@@ -110,21 +112,20 @@
                     return;
                 }
 
-                // Player paddle movement (left paddle)
-                if (this.cursors.up.isDown || this.wasd.W.isDown) {
+                // Player 1 paddle movement (left paddle) - WASD
+                if (this.wasd.W.isDown) {
                     this.leftPaddle.setVelocityY(-300);
-                } else if (this.cursors.down.isDown || this.wasd.S.isDown) {
+                } else if (this.wasd.S.isDown) {
                     this.leftPaddle.setVelocityY(300);
                 } else {
                     this.leftPaddle.setVelocityY(0);
                 }
 
-                // AI paddle movement (right paddle) - simple AI
-                const aiSpeed = 250;
-                if (this.ball.y < this.rightPaddle.y - 10) {
-                    this.rightPaddle.setVelocityY(-aiSpeed);
-                } else if (this.ball.y > this.rightPaddle.y + 10) {
-                    this.rightPaddle.setVelocityY(aiSpeed);
+                // Player 2 paddle movement (right paddle) - Arrow Keys
+                if (this.cursors.up.isDown) {
+                    this.rightPaddle.setVelocityY(-300);
+                } else if (this.cursors.down.isDown) {
+                    this.rightPaddle.setVelocityY(300);
                 } else {
                     this.rightPaddle.setVelocityY(0);
                 }
@@ -167,7 +168,7 @@
                     this.leftPaddle.setVelocity(0, 0);
                     this.rightPaddle.setVelocity(0, 0);
                     
-                    const winner = this.leftScore >= 5 ? 'Player Wins!' : 'AI Wins!';
+                    const winner = this.leftScore >= 5 ? 'Player 1 Wins!' : 'Player 2 Wins!';
                     this.gameOverText.setText(winner);
                     this.restartText.setVisible(true);
                 }
