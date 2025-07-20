@@ -169,9 +169,9 @@
                                   (paddle === this.rightPaddle && this.rightPoweredUp);
                 
                 if (isPoweredUp) {
-                    // Double the ball speed for powered-up paddles
-                    ball.setVelocityX(ball.body.velocity.x * 2);
-                    ball.setVelocityY(ball.body.velocity.y * 2);
+                    // 1.5x speed boost for powered-up paddles
+                    ball.setVelocityX(ball.body.velocity.x * 1.5);
+                    ball.setVelocityY(ball.body.velocity.y * 1.5);
                     // Play special powered-up sound
                     this.playBloop(880, 0.15, 0.2); // Higher pitch, shorter, louder
                 } else {
@@ -226,7 +226,7 @@
                 
                 // Play power-up sound if someone just got powered up
                 if ((this.leftPoweredUp && !wasLeftPowered) || (this.rightPoweredUp && !wasRightPowered)) {
-                    this.playBloop(330, 0.3, 0.12); // Lower pitch power-up activation sound
+                    this.playWoosh(); // Dramatic woosh sound
                 }
                 
                 this.updatePaddleColors();
@@ -272,6 +272,28 @@
                 
                 oscillator.start(this.audioContext.currentTime);
                 oscillator.stop(this.audioContext.currentTime + duration);
+            }
+
+            playWoosh() {
+                if (!this.audioContext) return;
+                
+                const oscillator = this.audioContext.createOscillator();
+                const gainNode = this.audioContext.createGain();
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(this.audioContext.destination);
+                
+                // Frequency sweep from low to high for woosh effect
+                oscillator.frequency.setValueAtTime(80, this.audioContext.currentTime);
+                oscillator.frequency.exponentialRampToValueAtTime(800, this.audioContext.currentTime + 0.5);
+                oscillator.type = 'sawtooth'; // More dramatic than sine wave
+                
+                // Volume envelope for dramatic effect
+                gainNode.gain.setValueAtTime(0.2, this.audioContext.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.001, this.audioContext.currentTime + 0.5);
+                
+                oscillator.start(this.audioContext.currentTime);
+                oscillator.stop(this.audioContext.currentTime + 0.5);
             }
         }
 
