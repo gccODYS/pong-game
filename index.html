@@ -86,6 +86,10 @@
                 this.leftScoreText = this.add.text(200, 50, '0', { fontSize: '48px', fill: '#fff' });
                 this.rightScoreText = this.add.text(600, 50, '0', { fontSize: '48px', fill: '#fff' });
 
+                // Power-up states
+                this.leftPoweredUp = false;
+                this.rightPoweredUp = false;
+
                 // Input
                 this.cursors = this.input.keyboard.createCursorKeys();
                 this.wasd = this.input.keyboard.addKeys('W,S');
@@ -142,12 +146,14 @@
                     this.rightScore++;
                     this.rightScoreText.setText(this.rightScore);
                     this.playBloop(660, 0.4, 0.15); // Higher pitch, longer duration for scoring
+                    this.updatePowerUps();
                     this.checkGameOver();
                     if (this.gameActive) this.resetBall();
                 } else if (this.ball.x > this.gameWidth) {
                     this.leftScore++;
                     this.leftScoreText.setText(this.leftScore);
                     this.playBloop(660, 0.4, 0.15); // Higher pitch, longer duration for scoring
+                    this.updatePowerUps();
                     this.checkGameOver();
                     if (this.gameActive) this.resetBall();
                 }
@@ -157,8 +163,21 @@
                 // Add some randomness to ball direction
                 let diff = ball.y - paddle.y;
                 ball.setVelocityY(diff * 5);
-                // Play bloop sound
-                this.playBloop();
+                
+                // Check if paddle is powered up
+                const isPoweredUp = (paddle === this.leftPaddle && this.leftPoweredUp) || 
+                                  (paddle === this.rightPaddle && this.rightPoweredUp);
+                
+                if (isPoweredUp) {
+                    // Double the ball speed for powered-up paddles
+                    ball.setVelocityX(ball.body.velocity.x * 2);
+                    ball.setVelocityY(ball.body.velocity.y * 2);
+                    // Play special powered-up sound
+                    this.playBloop(880, 0.15, 0.2); // Higher pitch, shorter, louder
+                } else {
+                    // Play normal bloop sound
+                    this.playBloop();
+                }
             }
 
             resetBall() {
@@ -189,7 +208,42 @@
                 this.gameOverText.setText('');
                 this.restartText.setVisible(false);
                 this.gameActive = true;
+                // Reset power-ups
+                this.leftPoweredUp = false;
+                this.rightPoweredUp = false;
+                this.updatePaddleColors();
                 this.resetBall();
+            }
+
+            updatePowerUps() {
+                const wasLeftPowered = this.leftPoweredUp;
+                const wasRightPowered = this.rightPoweredUp;
+                
+                // Left player gets power-up if down by 2 or more
+                this.leftPoweredUp = this.rightScore - this.leftScore >= 2;
+                // Right player gets power-up if down by 2 or more  
+                this.rightPoweredUp = this.leftScore - this.rightScore >= 2;
+                
+                // Play power-up sound if someone just got powered up
+                if ((this.leftPoweredUp && !wasLeftPowered) || (this.rightPoweredUp && !wasRightPowered)) {
+                    this.playBloop(330, 0.3, 0.12); // Lower pitch power-up activation sound
+                }
+                
+                this.updatePaddleColors();
+            }
+
+            updatePaddleColors() {
+                // Reset to white first
+                this.leftPaddle.setTint(0xffffff);
+                this.rightPaddle.setTint(0xffffff);
+                
+                // Apply red tint to powered-up paddles
+                if (this.leftPoweredUp) {
+                    this.leftPaddle.setTint(0xff0000); // Red
+                }
+                if (this.rightPoweredUp) {
+                    this.rightPaddle.setTint(0xff0000); // Red
+                }
             }
 
             initializeSound() {
