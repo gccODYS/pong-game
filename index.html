@@ -277,36 +277,24 @@
             playWoosh() {
                 if (!this.audioContext) return;
                 
-                // Create a buffer for white noise
-                const bufferSize = this.audioContext.sampleRate * 0.4; // 0.4 seconds
-                const buffer = this.audioContext.createBuffer(1, bufferSize, this.audioContext.sampleRate);
-                const data = buffer.getChannelData(0);
-                
-                // Generate white noise
-                for (let i = 0; i < bufferSize; i++) {
-                    data[i] = (Math.random() * 2 - 1) * 0.3;
-                }
-                
-                const source = this.audioContext.createBufferSource();
-                const filter = this.audioContext.createBiquadFilter();
+                const oscillator = this.audioContext.createOscillator();
                 const gainNode = this.audioContext.createGain();
                 
-                source.buffer = buffer;
-                source.connect(filter);
-                filter.connect(gainNode);
+                oscillator.connect(gainNode);
                 gainNode.connect(this.audioContext.destination);
                 
-                // Low-pass filter that opens up for woosh effect
-                filter.type = 'lowpass';
-                filter.frequency.setValueAtTime(200, this.audioContext.currentTime);
-                filter.frequency.exponentialRampToValueAtTime(2000, this.audioContext.currentTime + 0.3);
+                // Frequency sweep from high to low for downward woosh
+                oscillator.frequency.setValueAtTime(600, this.audioContext.currentTime);
+                oscillator.frequency.exponentialRampToValueAtTime(150, this.audioContext.currentTime + 0.4);
+                oscillator.type = 'sine';
                 
-                // Volume envelope
-                gainNode.gain.setValueAtTime(0.15, this.audioContext.currentTime);
+                // Quick attack, longer decay for woosh feel
+                gainNode.gain.setValueAtTime(0, this.audioContext.currentTime);
+                gainNode.gain.linearRampToValueAtTime(0.18, this.audioContext.currentTime + 0.05);
                 gainNode.gain.exponentialRampToValueAtTime(0.001, this.audioContext.currentTime + 0.4);
                 
-                source.start(this.audioContext.currentTime);
-                source.stop(this.audioContext.currentTime + 0.4);
+                oscillator.start(this.audioContext.currentTime);
+                oscillator.stop(this.audioContext.currentTime + 0.4);
             }
         }
 
