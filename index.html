@@ -77,6 +77,9 @@
                 // Start ball movement
                 this.resetBall();
 
+                // Initialize sound
+                this.initializeSound();
+
                 // Scores
                 this.leftScore = 0;
                 this.rightScore = 0;
@@ -152,6 +155,8 @@
                 // Add some randomness to ball direction
                 let diff = ball.y - paddle.y;
                 ball.setVelocityY(diff * 5);
+                // Play bloop sound
+                this.playBloop();
             }
 
             resetBall() {
@@ -183,6 +188,34 @@
                 this.restartText.setVisible(false);
                 this.gameActive = true;
                 this.resetBall();
+            }
+
+            initializeSound() {
+                try {
+                    this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                } catch (e) {
+                    console.log('Web Audio API not supported');
+                    this.audioContext = null;
+                }
+            }
+
+            playBloop() {
+                if (!this.audioContext) return;
+                
+                const oscillator = this.audioContext.createOscillator();
+                const gainNode = this.audioContext.createGain();
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(this.audioContext.destination);
+                
+                oscillator.frequency.setValueAtTime(440, this.audioContext.currentTime);
+                oscillator.type = 'sine';
+                
+                gainNode.gain.setValueAtTime(0.1, this.audioContext.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.001, this.audioContext.currentTime + 0.2);
+                
+                oscillator.start(this.audioContext.currentTime);
+                oscillator.stop(this.audioContext.currentTime + 0.2);
             }
         }
 
