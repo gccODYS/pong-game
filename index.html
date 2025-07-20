@@ -141,11 +141,13 @@
                 if (this.ball.x < 0) {
                     this.rightScore++;
                     this.rightScoreText.setText(this.rightScore);
+                    this.playBloop(660, 0.4, 0.15); // Higher pitch, longer duration for scoring
                     this.checkGameOver();
                     if (this.gameActive) this.resetBall();
                 } else if (this.ball.x > this.gameWidth) {
                     this.leftScore++;
                     this.leftScoreText.setText(this.leftScore);
+                    this.playBloop(660, 0.4, 0.15); // Higher pitch, longer duration for scoring
                     this.checkGameOver();
                     if (this.gameActive) this.resetBall();
                 }
@@ -199,7 +201,7 @@
                 }
             }
 
-            playBloop() {
+            playBloop(frequency = 440, duration = 0.2, volume = 0.1) {
                 if (!this.audioContext) return;
                 
                 const oscillator = this.audioContext.createOscillator();
@@ -208,14 +210,14 @@
                 oscillator.connect(gainNode);
                 gainNode.connect(this.audioContext.destination);
                 
-                oscillator.frequency.setValueAtTime(440, this.audioContext.currentTime);
+                oscillator.frequency.setValueAtTime(frequency, this.audioContext.currentTime);
                 oscillator.type = 'sine';
                 
-                gainNode.gain.setValueAtTime(0.1, this.audioContext.currentTime);
-                gainNode.gain.exponentialRampToValueAtTime(0.001, this.audioContext.currentTime + 0.2);
+                gainNode.gain.setValueAtTime(volume, this.audioContext.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.001, this.audioContext.currentTime + duration);
                 
                 oscillator.start(this.audioContext.currentTime);
-                oscillator.stop(this.audioContext.currentTime + 0.2);
+                oscillator.stop(this.audioContext.currentTime + duration);
             }
         }
 
